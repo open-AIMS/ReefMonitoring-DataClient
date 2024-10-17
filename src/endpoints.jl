@@ -70,26 +70,3 @@ function get_manta_tow(name::String)
     resp_dicts = JSON.parse(String(resp.body))
     return dicts_to_dataframe(resp_dicts)
 end
-
-function get_all_cover()
-    nms = get_reef_names()
-    means = []
-    medians = []
-    lower = []
-    upper = []
-    r_names = []
-    for nm in nms.reef_names
-        @info "Requesting: $(nm)"
-        tmp_m, tmp_med, tmp_l, tmp_u = get_location_cover(nm)
-        if tmp_m == 0.0
-            @info "$(nm): none found"
-            continue
-        end
-        push!(means, tmp_m)
-        push!(medians, tmp_med)
-        push!(lower, tmp_l)
-        push!(upper, tmp_u)
-        push!(r_names, nm)
-    end
-    return DataFrame(reef_name=r_names, mean=means, median=medians, lower=lower, upper=upper)
-end
