@@ -43,9 +43,13 @@ function get_photo_transect(name::String, key="median")
         ))
     end
     if length(resp.body) == 0
+        @info "exiting"
         return nothing
     end
     resp_dicts = JSON.parse(String(resp.body))
+    if length(resp_dicts) == 0
+        return nothing
+    end
     return dicts_to_dataframe(resp_dicts)
 end
 
