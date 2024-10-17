@@ -8,6 +8,7 @@ using CSV,
     NetCDF,
     YAXArrays
 
+# Reefmon taxa classification to C~Scape/ADRIAmod functional groups
 const REEFMON_TO_TAXA::Dict{String, Int64} = Dict(
     "Acropora" => -1, # Split acro table corym
     "Pocilloporidae" => 3, # Corym non Acro
@@ -48,7 +49,7 @@ function _add_taxa_cover!(
     taxa::String;
     stat::Symbol=:mean
 )::Matrix
-    temporal_range = 1994:2024
+    temporal_range = 1990:2024
     taxa_idx = REEFMON_TO_TAXA[taxa]
 
     # Other or rare groups are ignored
@@ -77,7 +78,7 @@ Some ltmp location report coral composition at different depths seperately. Calc
 composition at the dataframe that has already been filtered to only refer to a single depth.
 """
 function depth_composition(photo_transect::DataFrame; stat::Symbol=:mean)::Matrix{Union{Float64, Missing}}
-    temporal_range = 1994:2024
+    temporal_range = 1990:2024
     composition = Matrix{Union{Float64, Missing}}(undef, length(temporal_range), N_TAXA)
     composition .= 0.0
 
@@ -141,6 +142,11 @@ function hard_coral_composition(photo_transect::DataFrame; stat::Symbol=:mean)::
     return composition
 end
 
+"""
+    location_composition_stat(photo_transect::DataFrame; stat=:mean)::YAXArray
+
+Constuct a YAXArray for the given statistic contained in the dataframe.
+"""
 function location_composition_stat(photo_transect::DataFrame; stat=:mean)::YAXArray
     props::Dict{String, Any} = Dict(
         "unit" => "proportion",
@@ -148,7 +154,7 @@ function location_composition_stat(photo_transect::DataFrame; stat=:mean)::YAXAr
         "desc" => "hard coral composition description",
     )
     dims::Tuple = (
-        Dim{:timesteps}(1994:2024),
+        Dim{:timesteps}(1990:2024),
         Dim{:taxa}(ADRIA_TAXA)
     )
     return YAXArray(
@@ -161,7 +167,8 @@ end
 """
     location_composition_dataset(photo_transect::DataFrame)::Dataset
 
-
+Construct a dataset containing the lower, mean, median and upper variables of coral
+composition transformed to match C~Scape/ADRIAmod functional groups.
 """
 function location_composition_dataset(photo_transect::DataFrame)::Dataset
     var_names = [:lower, :mean, :median, :upper]
