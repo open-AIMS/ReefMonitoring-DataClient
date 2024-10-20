@@ -1,8 +1,13 @@
+name = "ReefMonitoring"
+uuid = "a3af5ec7-7e43-4bf4-9531-3ce64fba4f24"
+authors = ["Daniel Tan <d.tan@aims.gov.au>"]
+version = "0.1.0"
+
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"

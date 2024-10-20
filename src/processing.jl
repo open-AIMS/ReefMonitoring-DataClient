@@ -2,13 +2,13 @@
 Functions to transform results from the API endpoints into more user friendly formats.
 """
 
-include("endpoints.jl")
-
 using CSV,
     DataFrames,
     Dates,
     NetCDF,
     YAXArrays
+
+using ProgressMeter
 
 # Reefmon taxa classification to C~Scape/ADRIAmod functional groups
 const REEFMON_TO_TAXA::Dict{String, Int64} = Dict(
