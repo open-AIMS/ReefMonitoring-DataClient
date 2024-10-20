@@ -13,7 +13,7 @@ end
 
 Retrieve properties of all monitored reef.
 """
-function get_reef_info()
+function get_reef_info()::DataFrame
     resp = HTTP.request(
         "GET",
         "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/reef"
@@ -31,7 +31,7 @@ function get_reef_info()
     return dicts_to_dataframe(resp_dicts)
 end
 
-function get_photo_transect(name::String, key="median")
+function get_photo_transect(name::String)::Union{DataFrame, Nothing}
     encoded_arg = HTTP.URIs.escapeuri(name)
     resp = HTTP.request("GET", "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=photo-transect")
     if resp.status != 200
@@ -53,7 +53,7 @@ function get_photo_transect(name::String, key="median")
     return dicts_to_dataframe(resp_dicts)
 end
 
-function get_manta_tow(name::String)
+function get_manta_tow(name::String)::Union{DataFrame, Nothing}
     encoded_arg = HTTP.URIs.escapeuri(name)
     resp = HTTP.request("GET", "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=manta")
     if resp.status != 200

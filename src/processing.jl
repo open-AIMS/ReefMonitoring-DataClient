@@ -2,6 +2,8 @@
 Functions to transform results from the API endpoints into more user friendly formats.
 """
 
+include("endpoints.jl")
+
 using CSV,
     DataFrames,
     Dates,
@@ -49,7 +51,7 @@ function _add_taxa_cover!(
     taxa::String;
     stat::Symbol=:mean
 )::Matrix
-    temporal_range = 1990:2024
+    temporal_range = 1992:2025
     taxa_idx = REEFMON_TO_TAXA[taxa]
 
     # Other or rare groups are ignored
@@ -78,7 +80,7 @@ Some ltmp location report coral composition at different depths seperately. Calc
 composition at the dataframe that has already been filtered to only refer to a single depth.
 """
 function depth_composition(photo_transect::DataFrame; stat::Symbol=:mean)::Matrix{Union{Float64, Missing}}
-    temporal_range = 1990:2024
+    temporal_range = 1992:2025
     composition = Matrix{Union{Float64, Missing}}(undef, length(temporal_range), N_TAXA)
     composition .= 0.0
 
@@ -154,7 +156,7 @@ function location_composition_stat(photo_transect::DataFrame; stat=:mean)::YAXAr
         "desc" => "hard coral composition description",
     )
     dims::Tuple = (
-        Dim{:timesteps}(1990:2024),
+        Dim{:timesteps}(1992:2025),
         Dim{:taxa}(ADRIA_TAXA)
     )
     return YAXArray(
@@ -178,6 +180,56 @@ function location_composition_dataset(photo_transect::DataFrame)::Dataset
     properties::Dict{String, Any} = Dict(
         "creation data" => Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"),
         "desc" => "Hard coral composition statistics"
+    )
+    return Dataset(; properties=properties, vars...)
+end
+
+function multiple_location_stat(photo_transects, reef_names::Vector{Symbol}; stat=:mean)::YAXArray
+    timesteps = 1992:2025
+
+    props::Dict{String, Any} = Dict(
+        "unit" => "proportion",
+        "name" => "composition " * String(stat),
+        "desc" => "hard coral cover composition for each location"
+    )
+    dims::Tuple = (
+        Dim{:timesteps}(timesteps),
+        Dim{:taxa}(ADRIA_TAXA),
+        Dim{:location}(Symbol.(reef_names))
+    )
+
+    n_timesteps = length(timesteps)
+    n_taxa = length(ADRIA_TAXA)
+    n_locs = length(photo_transects)
+
+    loc_stat = YAXArray(dims, zeros(Union{Float64, Missing}, n_timesteps, n_taxa, n_locs), props)
+    for (loc_idx, ) in enumerate(photo_transects)
+        loc_stat[location=loc_idx] .= hard_coral_composition(photo_transects[loc_idx]; stat=stat)
+    end
+    return loc_stat
+end
+
+"""
+    multiple_location_comparison(locs::DataFrame)::Dataset
+
+Construct a dataset of coral composition for each location present in the given dataframe.
+"""
+function multiple_location_comparison(locs::DataFrame)::Dataset
+    pt_data = @showprogress desc="Requesting" map(get_photo_transect, locs.aims_reef_name)
+    data_mask = (!).(isnothing.(pt_data))
+
+    var_names = [:lower, :mean, :median, :upper]
+    vars = Tuple(
+        stat => multiple_location_stat(
+            pt_data[data_mask],
+            Symbol.(locs.aims_reef_name[data_mask]);
+            stat=stat
+        ) for stat in var_names
+    )
+
+    properties::Dict{String, Any} = Dict(
+        "creation data" => Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"),
+        "desc" => "Hard coral composition statistics for each location"
     )
     return Dataset(; properties=properties, vars...)
 end
