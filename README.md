@@ -3,14 +3,14 @@
 ## Setup
 
 ```julia
-julia> include("src/endpoints.jl")
+julia> ]add <path to repo>
 
-julia> include("src/processing.jl")
+julia> using ReefMonitoring
 ```
 
 ## Usage
 
-### Reef Information
+**Reef Information**
 ```julia
 # Retrieve Reef Monitoring Site information
 julia> reef_info = get_reef_info()
@@ -20,7 +20,7 @@ julia> reef_info = get_reef_info()
    1 │ -16.0444    145.867  Agincourt Reef No.1              2023-09-01     2023.6657534246575343   CA        Wet Tropics        LTMP
 ```
 
-### Photo Transects
+**Photo Transects**
 ```julia
 julia> photo_transect = get_photo_transect("Agincourt Reef No.1")
 720×19 DataFrame
@@ -41,7 +41,7 @@ lower, mean, median, upper
 Properties: Dict{String, Any}("creation data" => "2024-10-17 16:36:31", "desc" => "Hard coral composition statistics")
 ```
 
-### Manta Tow
+**Manta Tow**
 ```julia
 julia> manta_tow = get_manta_tow("Agincourt Reef No.1")
 31×19 DataFrame
@@ -49,3 +49,14 @@ julia> manta_tow = get_manta_tow("Agincourt Reef No.1")
 ─────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
    1 │ _          HC        0.495643      9.0  null               1578817  Agincourt Reef No.1  9.0m    0.395497   0.445421  LTMP          MANTA    reef             2023.6657534246575343    0.44537          2 ⋯
 ```
+
+**Retrieving and Processing all Coral Composition Locations**
+
+```julia
+julia> reef_info = get_reef_info()
+
+julia> coral_composition = multiple_location_comparison(reef_info)
+```
+
+Get a `Dataset` with the mean, median, lower and upper bounds of different coral composition
+values for every location contained in the `DataFrame` returned by `get_reef_info()`.
