@@ -1,5 +1,7 @@
 # Reef Monitoring Data Client
 
+Documentation on results returned by the three endpoints are contained in `Endpoints.md`.
+
 ## Setup
 
 ```julia
