@@ -1,6 +1,6 @@
 # Reef Monitoring Data Client
 
-Documentation on results returned by the three endpoints are contained in `Endpoints.md`.
+Documentation on results returned by the three endpoints are contained in [Endpoints documentation](https://github.com/DanTanAtAims/Reef-Monitoring/blob/main/Endpoints.md).
 
 ## Setup
 
