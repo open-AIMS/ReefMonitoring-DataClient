@@ -34,12 +34,12 @@ const REEFMON_TO_TAXA::Dict{String, Int64} = Dict(
 
 const N_TAXA::Int64 = 5
 
-const ADRIA_TAXA::Vector{Symbol} = [
-    :Tabular_Acropora,
-    :Corymbose_Acropora,
-    :Corymboses_non_Acropora,
-    :Small_Massives,
-    :Large_Massives
+const ADRIA_TAXA::Vector{String} = [
+    "Tabular_Acropora",
+    "Corymbose_Acropora",
+    "Corymboses_non_Acropora",
+    "Small_Massives",
+    "Large_Massives"
 ]
 
 """
@@ -184,7 +184,7 @@ function location_composition_dataset(photo_transect::DataFrame)::Dataset
     return Dataset(; properties=properties, vars...)
 end
 
-function multiple_location_stat(photo_transects, reef_names::Vector{Symbol}; stat=:mean)::YAXArray
+function multiple_location_stat(photo_transects, reef_names::Vector{String}; stat=:mean)::YAXArray
     timesteps = 1992:2025
 
     props::Dict{String, Any} = Dict(
@@ -195,7 +195,7 @@ function multiple_location_stat(photo_transects, reef_names::Vector{Symbol}; sta
     dims::Tuple = (
         Dim{:timesteps}(timesteps),
         Dim{:taxa}(ADRIA_TAXA),
-        Dim{:location}(Symbol.(reef_names))
+        Dim{:location}(reef_names)
     )
 
     n_timesteps = length(timesteps)
@@ -222,7 +222,7 @@ function multiple_location_comparison(locs::DataFrame)::Dataset
     vars = Tuple(
         stat => multiple_location_stat(
             pt_data[data_mask],
-            Symbol.(locs.aims_reef_name[data_mask]);
+            locs.aims_reef_name[data_mask];
             stat=stat
         ) for stat in var_names
     )
