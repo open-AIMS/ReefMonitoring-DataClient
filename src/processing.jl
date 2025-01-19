@@ -8,7 +8,29 @@ using CSV,
     NetCDF,
     YAXArrays
 
+using StringDistances
+
+import GeoDataFrames as GDF
+import ArchGDAL as AG
+
 using ProgressMeter
+
+function get_unique_id(lat::Float64, lon::Float64, canonical_gpkg::DataFrame)::String
+    pt = AG.createpoint(lon, lat)
+    dists::Vector{Float64} = [AG.distance(poly, pt) for poly in canonical_gpkg.geometry]
+    closest = argmin(dists)
+    if dists[closest] *  111.1 > 1.0
+        return replace("N/A_$(string(trunc(lat, digits=3)))_$(string(trunc(lon, digits=3)))", "." => "", "-" => "")
+    end
+    return canonical_gpkg.UNIQUE_ID[closest]
+end
+
+function get_unique_id_compare(reef_name::String, lat::Float64, lon::Float64, canonical_gpkg::DataFrame)::String
+    pt = AG.createpoint(lon, lat)
+    closest = argmin([AG.distance(poly, pt) for poly in canonical_gpkg.geometry])
+    @info "api name: $(reef_name), canonical_gpkg: $(canonical_gpkg.reef_name[closest]), qgram: $(Overlap(2)(reef_name, canonical_gpkg.reef_name[closest]))"
+    return canonical_gpkg.UNIQUE_ID[closest]
+end
 
 # Reefmon taxa classification to C~Scape/ADRIAmod functional groups
 const REEFMON_TO_TAXA::Dict{String, Int64} = Dict(
@@ -184,7 +206,20 @@ function location_composition_dataset(photo_transect::DataFrame)::Dataset
     return Dataset(; properties=properties, vars...)
 end
 
-function multiple_location_stat(photo_transects, reef_names::Vector{String}; stat=:mean)::YAXArray
+"""
+    multiple_location_stat(photo_transects, lats::Vector{Float64}, lons::Vector{Float64}, canonical_gpkg::DataFrame; stat=:mean)::YAXArray
+
+Create the YAXArray for a single statistic.
+"""
+function multiple_location_stat(
+    photo_transects,
+    lats::Vector{Float64},
+    lons::Vector{Float64},
+    canonical_gpkg::DataFrame;
+    stat=:mean
+)::YAXArray
+    # Get the unique ids for each for location by finding the closest reef polygon
+    unique_ids::Vector{String} = get_unique_id.(lats, lons, Ref(canonical_gpkg))
     timesteps = 1992:2025
 
     props::Dict{String, Any} = Dict(
@@ -195,7 +230,7 @@ function multiple_location_stat(photo_transects, reef_names::Vector{String}; sta
     dims::Tuple = (
         Dim{:timesteps}(timesteps),
         Dim{:taxa}(ADRIA_TAXA),
-        Dim{:location}(reef_names)
+        Dim{:location}(unique_ids)
     )
 
     n_timesteps = length(timesteps)
@@ -210,11 +245,15 @@ function multiple_location_stat(photo_transects, reef_names::Vector{String}; sta
 end
 
 """
-    multiple_location_comparison(locs::DataFrame)::Dataset
+    multiple_location_comparison(locs::DataFrame, canonical_gpkg::DataFrame)::Dataset
 
 Construct a dataset of coral composition for each location present in the given dataframe.
 """
-function multiple_location_comparison(locs::DataFrame)::Dataset
+function multiple_location_comparison(
+    locs::DataFrame,
+    canonical_gpkg_path::String
+)::Dataset
+    canonical_gpkg = GDF.read(canonical_gpkg_path)
     pt_data = @showprogress desc="Requesting" map(get_photo_transect, locs.aims_reef_name)
     data_mask = (!).(isnothing.(pt_data))
 
@@ -222,7 +261,9 @@ function multiple_location_comparison(locs::DataFrame)::Dataset
     vars = Tuple(
         stat => multiple_location_stat(
             pt_data[data_mask],
-            locs.aims_reef_name[data_mask];
+            locs.latitude[data_mask],
+            locs.longitude[data_mask],
+            canonical_gpkg;
             stat=stat
         ) for stat in var_names
     )
