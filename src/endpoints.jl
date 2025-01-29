@@ -31,7 +31,7 @@ function get_reef_info()::DataFrame
     return dicts_to_dataframe(resp_dicts)
 end
 
-function get_photo_transect(name::String)::Union{DataFrame, Nothing}
+function get_photo_transect(name::String)::Union{DataFrame,Nothing}
     encoded_arg = HTTP.URIs.escapeuri(name)
     resp = HTTP.request("GET", "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=photo-transect")
     if resp.status != 200
@@ -53,9 +53,13 @@ function get_photo_transect(name::String)::Union{DataFrame, Nothing}
     return dicts_to_dataframe(resp_dicts)
 end
 
-function get_manta_tow(name::String)::Union{DataFrame, Nothing}
-    encoded_arg = HTTP.URIs.escapeuri(name)
-    resp = HTTP.request("GET", "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=manta")
+"""
+    function get_request(request_url::String)::Union{DataFrame,Nothing}
+
+Perform GET request to given url and parse result to a DataFrame
+"""
+function get_request(request_url::String)::Union{DataFrame,Nothing}
+    resp = HTTP.request("GET", request_url)
     if resp.status != 200
         throw(HTTP.StatusError(
             resp.status,
@@ -70,3 +74,30 @@ function get_manta_tow(name::String)::Union{DataFrame, Nothing}
     resp_dicts = JSON.parse(String(resp.body))
     return dicts_to_dataframe(resp_dicts)
 end
+
+function get_manta_tow(name::String)::Union{DataFrame,Nothing}
+    encoded_arg = HTTP.URIs.escapeuri(name)
+    request_url = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?" *
+                  "domain_name=$(encoded_arg)&domain_category=reef&data_type=manta"
+    return get_request(request_url)
+end
+
+"""
+    get_disturbances(reef_name::String)::Union{DataFrame,Nothing}
+
+Get disturbances for given reef. The disturbance types that appear on the "disturbance"
+column translate to: "u" => "unknown", "s" => "storm", "m" => "multiple",
+"b" => "bleaching", "d" => "disease", "c" => "cots".
+
+# Arguments
+- `reef_name` : The name of the reef to get the disturbances for.
+- `aggregation` : How the data is going to be aggregated. Known valid options are "reef"
+and "depth". Defaults to "reef".
+"""
+function get_disturbances(reef_name::String; aggregation::String="reef")::Union{DataFrame,Nothing}
+    encoded_arg = HTTP.URIs.escapeuri(reef_name)
+    request_url = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/disturbance?" *
+                  "reef=$encoded_arg&aggregation=$aggregation&zone=_"
+    return get_request(request_url)
+end
+
