@@ -1,5 +1,7 @@
 using CSV, DataFrames, HTTP, JSON
 
+const BASE_URL = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/"
+
 function dicts_to_dataframe(coral_dicts)::DataFrame
     json_keys = keys(coral_dicts[1])
     cols = Dict(
@@ -14,33 +16,21 @@ end
 Retrieve properties of all monitored reef.
 """
 function get_reef_info()::DataFrame
-    resp = HTTP.request(
-        "GET",
-        "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/reef"
-    )
+    url = joinpath(BASE_URL, "reef")
+    resp = HTTP.request("GET", url)
     if resp.status != 200
-        throw(HTTP.StatusError(
-            resp.status,
-            "GET",
-            "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/reef",
-            resp
-        ))
+        throw(HTTP.StatusError(resp.status, "GET", url, resp))
     end
     resp_dicts = JSON.parse(String(resp.body))
-
     return dicts_to_dataframe(resp_dicts)
 end
 
 function get_photo_transect(name::String)::Union{DataFrame,Nothing}
     encoded_arg = HTTP.URIs.escapeuri(name)
-    resp = HTTP.request("GET", "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=photo-transect")
+    url = joinpath(BASE_URL, "data?domain_name=$(encoded_arg)&domain_category=reef&data_type=photo-transect")
+    resp = HTTP.request("GET", url)
     if resp.status != 200
-        throw(HTTP.StatusError(
-            resp.status,
-            "GET",
-            "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=photo-transect",
-            resp
-        ))
+        throw(HTTP.StatusError(resp.status, "GET", url, resp))
     end
     if length(resp.body) == 0
         @info "exiting"
@@ -53,33 +43,10 @@ function get_photo_transect(name::String)::Union{DataFrame,Nothing}
     return dicts_to_dataframe(resp_dicts)
 end
 
-"""
-    function get_request(request_url::String)::Union{DataFrame,Nothing}
-
-Perform GET request to given url and parse result to a DataFrame
-"""
-function get_request(request_url::String)::Union{DataFrame,Nothing}
-    resp = HTTP.request("GET", request_url)
-    if resp.status != 200
-        throw(HTTP.StatusError(
-            resp.status,
-            "GET",
-            "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?domain_name=$(encoded_arg)&domain_category=reef&data_type=photo-transect",
-            resp
-        ))
-    end
-    if length(resp.body) == 0
-        return nothing
-    end
-    resp_dicts = JSON.parse(String(resp.body))
-    return dicts_to_dataframe(resp_dicts)
-end
-
-function get_manta_tow(name::String)::Union{DataFrame,Nothing}
-    encoded_arg = HTTP.URIs.escapeuri(name)
-    request_url = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/data?" *
-                  "domain_name=$(encoded_arg)&domain_category=reef&data_type=manta"
-    return get_request(request_url)
+function get_manta_tow(reef_name::String)::Union{DataFrame,Nothing}
+    encoded_arg = HTTP.URIs.escapeuri(reef_name)
+    url_target = "data?domain_name=$(encoded_arg)&domain_category=reef&data_type=manta"
+    return _get_request(url_target)
 end
 
 """
@@ -96,14 +63,30 @@ and "depth". Defaults to "reef".
 """
 function get_disturbances(reef_name::String; aggregation::String="reef")::Union{DataFrame,Nothing}
     encoded_arg = HTTP.URIs.escapeuri(reef_name)
-    request_url = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/disturbance?" *
-                  "reef=$encoded_arg&aggregation=$aggregation&zone=_"
-    return get_request(request_url)
+    url_target = "disturbance?reef=$encoded_arg&aggregation=$aggregation&zone=_"
+    return _get_request(url_target)
 end
 
 function get_cots(reef_name::String)::Union{DataFrame,Nothing}
     encoded_arg = HTTP.URIs.escapeuri(reef_name)
-    request_url = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/cots-by-domain?" *
-                  "domain_category=reef&domain_name=$(encoded_arg)"
-    return get_request(request_url)
+    url_target = "cots-by-domain?domain_category=reef&domain_name=$(encoded_arg)"
+    return _get_request(url_target)
+end
+
+"""
+    function get_request(request_url::String)::Union{DataFrame,Nothing}
+
+Perform GET request to given url and parse result to a DataFrame
+"""
+function _get_request(url_target::String)::Union{DataFrame,Nothing}
+    request_url = joinpath(BASE_URL, url_target)
+    resp = HTTP.request("GET", request_url)
+    if resp.status != 200
+        throw(HTTP.StatusError(resp.status, "GET", request_url, resp))
+    end
+    if length(resp.body) == 0
+        return nothing
+    end
+    resp_dicts = JSON.parse(String(resp.body))
+    return dicts_to_dataframe(resp_dicts)
 end
