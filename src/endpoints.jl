@@ -101,3 +101,9 @@ function get_disturbances(reef_name::String; aggregation::String="reef")::Union{
     return get_request(request_url)
 end
 
+function get_cots(reef_name::String)::Union{DataFrame,Nothing}
+    encoded_arg = HTTP.URIs.escapeuri(reef_name)
+    request_url = "https://api.aims.gov.au/data-v2.0/10.25845/5c09bc4ff315c/cots-by-domain?" *
+                  "domain_category=reef&domain_name=$(encoded_arg)"
+    return get_request(request_url)
+end
