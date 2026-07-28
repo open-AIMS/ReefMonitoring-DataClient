@@ -59,7 +59,7 @@ const N_TAXA::Int64 = 5
 const ADRIA_TAXA::Vector{String} = [
     "Tabular_Acropora",
     "Corymbose_Acropora",
-    "Corymboses_non_Acropora",
+    "Corymbose_non_Acropora",
     "Small_Massives",
     "Large_Massives"
 ]
